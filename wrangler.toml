@@ -64,7 +64,7 @@ dataset = "sw_report_log"
 #      of websub-ping returns 202.
 # ---------------------------------------------------------------------------
 #
-# [[d1_databases]]
-# binding = "WEBSUB_DB"
-# database_name = "specification-website-websub"
-# database_id = "PASTE_ID_FROM_STEP_1"
+[[d1_databases]]
+binding = "WEBSUB_DB"
+database_name = "specification-website-websub"
+database_id = "9b78fdb2-2eb5-421a-92d4-beedf83fb4fc"
