@@ -34,6 +34,17 @@
   --color-accent-700: #15803d;
   --color-accent-800: #166534;
   --color-accent-900: #14532d;
+
+  /* Sibling scale: the purple of specification.email, used only by the
+     cross-link banner above the footer. Like the ink scale it resolves via
+     light-dark() and is semantic in both schemes — `50` is the banner
+     surface, `200` its border, `500` text on that surface, `600`/`700` the
+     solid button and its hover. */
+  --color-sibling-50: light-dark(#faf5ff, #1a1030);
+  --color-sibling-200: light-dark(#ddd6fe, #3b2a63);
+  --color-sibling-500: light-dark(#6d28d9, #c4b5fd);
+  --color-sibling-600: light-dark(#6d28d9, #7c3aed);
+  --color-sibling-700: light-dark(#5b21b6, #6d28d9);
 }
 
 /* Default = follow OS. Explicit toggle states force a single scheme, which

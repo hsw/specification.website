@@ -5,6 +5,7 @@ import { sri, pagefindImportMap } from "~/lib/integrity";
 import { WEBMCP_GUARD, webmcpIntegrity } from "~/lib/webmcp";
 import HeadMeta from "~/components/HeadMeta.astro";
 import SiteHeader from "~/components/SiteHeader.astro";
+import SiblingBanner from "~/components/SiblingBanner.astro";
 import SiteFooter from "~/components/SiteFooter.astro";
 
 interface Props {
@@ -173,6 +174,7 @@ const webmcpSri = await webmcpIntegrity();
     <main id="main">
       <slot />
     </main>
+    <SiblingBanner />
     <SiteFooter />
 
     {
