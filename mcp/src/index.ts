@@ -213,7 +213,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
       return ok(id, {});
 
     case 'tools/list':
-      return ok(id, { tools: TOOLS });
+      return ok(id, { resultType: 'complete', tools: TOOLS });
 
     case 'tools/call': {
       const name = params.name as string;
@@ -247,7 +247,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
     }
 
     case 'prompts/list':
-      return ok(id, { prompts: PROMPTS });
+      return ok(id, { resultType: 'complete', prompts: PROMPTS });
 
     case 'prompts/get': {
       const name = params.name as string;
