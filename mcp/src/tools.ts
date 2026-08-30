@@ -225,7 +225,17 @@ export function getChecklistTool(
 ) {
   const pages = filterPages(m.pages, args);
   if (pages.length === 0) {
-    return { content: [{ type: 'text' as const, text: 'No matching items.' }] };
+    return {
+      content: [{ type: 'text' as const, text: 'No matching items.' }],
+      structuredContent: {
+        total: 0,
+        filters: {
+          ...(args.category ? { category: args.category } : {}),
+          ...(args.status ? { status: args.status } : {}),
+        },
+        categories: [],
+      },
+    };
   }
   // group by category
   const groups = new Map<string, Page[]>();

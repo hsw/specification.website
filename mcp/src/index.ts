@@ -61,6 +61,16 @@ const LEGACY_DEFAULT_VERSION = LEGACY_PROTOCOL_VERSIONS[0];
 
 const SUPPORTED_PROTOCOL_VERSIONS = [...MODERN_PROTOCOL_VERSIONS, ...LEGACY_PROTOCOL_VERSIONS];
 
+const COMPLETE_RESULT = { resultType: 'complete' } as const;
+
+// Complete catalogue/discovery results are identical for every caller and
+// remain unchanged until the next Worker deploy.
+const PUBLIC_COMPLETE_RESULT = {
+  ...COMPLETE_RESULT,
+  ttlMs: 3_600_000,
+  cacheScope: 'public',
+} as const;
+
 // Our own support window for the handshake, announced on the wire.
 //
 // Note what this is NOT: MCP does not deprecate the `initialize` handshake.
@@ -145,6 +155,31 @@ function ok(id: string | number | null | undefined, result: unknown): RpcRespons
   return { jsonrpc: '2.0', id: id ?? null, result };
 }
 
+function complete(
+  id: string | number | null | undefined,
+  result: Record<string, unknown>,
+): RpcResponse {
+  const resultMeta =
+    result._meta && typeof result._meta === 'object'
+      ? (result._meta as Record<string, unknown>)
+      : {};
+  return ok(id, {
+    ...COMPLETE_RESULT,
+    ...result,
+    _meta: {
+      [META_SERVER_INFO]: SERVER_INFO,
+      ...resultMeta,
+    },
+  });
+}
+
+function publicComplete(
+  id: string | number | null | undefined,
+  result: Record<string, unknown>,
+): RpcResponse {
+  return complete(id, { ...PUBLIC_COMPLETE_RESULT, ...result });
+}
+
 function err(
   id: string | number | null | undefined,
   code: number,
@@ -181,8 +216,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
     // supported versions, capabilities and identity in one request, so a
     // client can skip probing tools/list + prompts/list separately.
     case 'server/discover':
-      return ok(id, {
-        resultType: 'complete',
+      return publicComplete(id, {
         supportedVersions: MODERN_PROTOCOL_VERSIONS,
         // No `logging` here. Logging is Deprecated as of 2026-07-28
         // (specification/2026-07-28/deprecated, SEP-2577), and new
@@ -194,15 +228,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
           tools: {},
           prompts: {},
         },
-        _meta: {
-          [META_SERVER_INFO]: SERVER_INFO,
-        },
         instructions: SERVER_INSTRUCTIONS,
-        // The manifest is baked in at build time and only changes on deploy,
-        // so a discovery result stays valid for as long as a client cares to
-        // hold it. Public: there is nothing per-client in this response.
-        ttlMs: 3_600_000,
-        cacheScope: 'public',
       });
 
     case 'notifications/initialized':
@@ -213,7 +239,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
       return ok(id, {});
 
     case 'tools/list':
-      return ok(id, { resultType: 'complete', tools: TOOLS });
+      return publicComplete(id, { tools: TOOLS });
 
     case 'tools/call': {
       const name = params.name as string;
@@ -221,17 +247,24 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
       try {
         switch (name) {
           case 'search':
-            return ok(id, searchTool(manifest, args as { query: string; limit?: number }));
+            return complete(id, searchTool(manifest, args as { query: string; limit?: number }));
           case 'list_topics':
-            return ok(id, listTopicsTool(manifest, args as any));
+            return complete(id, listTopicsTool(manifest, args as any));
           case 'get_topic':
-            return ok(id, getTopicTool(manifest, args as { slug: string }));
+            return complete(id, getTopicTool(manifest, args as { slug: string }));
           case 'get_checklist':
-            return ok(id, getChecklistTool(manifest, args as any));
+            return complete(id, getChecklistTool(manifest, args as any));
           case 'get_categories':
-            return ok(id, getCategoriesTool(manifest));
+            return complete(id, getCategoriesTool(manifest));
           case 'get_changes':
-            return ok(id, getChangesTool(manifest, args as { since?: string; type?: string; limit?: number }));
+            return complete(
+              id,
+              getChangesTool(manifest, args as {
+                since?: string;
+                type?: string;
+                limit?: number;
+              }),
+            );
           default:
             return err(id, -32602, `Unknown tool: ${name}`);
         }
@@ -239,7 +272,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
         // Per SEP-1303 (2025-11-25): execution/validation failures inside a
         // known tool are tool results with isError, not protocol errors, so
         // the calling model can read the message and self-correct.
-        return ok(id, {
+        return complete(id, {
           content: [{ type: 'text', text: `Tool error: ${(e as Error).message}` }],
           isError: true,
         });
@@ -247,7 +280,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
     }
 
     case 'prompts/list':
-      return ok(id, { resultType: 'complete', prompts: PROMPTS });
+      return publicComplete(id, { prompts: PROMPTS });
 
     case 'prompts/get': {
       const name = params.name as string;
@@ -255,7 +288,7 @@ function handleRpc(req: RpcRequest): RpcResponse | null {
       if (name !== 'audit_url') return err(id, -32602, `Unknown prompt: ${name}`);
       const url = args.url;
       if (!url) return err(id, -32602, 'Missing required argument: url');
-      return ok(id, buildAuditPrompt(manifest, url, args.focus));
+      return complete(id, buildAuditPrompt(manifest, url, args.focus));
     }
 
     case 'logging/setLevel':
