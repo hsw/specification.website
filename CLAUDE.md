@@ -116,7 +116,7 @@ npm run assets   # regenerate icons + OG image
 
 `predev` and `prebuild` run `scripts/generate-assets.mjs` automatically.
 
-The Worker in `mcp/` has its own scripts, run from there: `npm test`, `npm run typecheck`, `npm run dev` (wrangler on 31338). On a fresh clone run `npm run build:data` first — `src/data.json` is generated, so `typecheck` fails with `TS2307` without it; `pretest` covers `npm test`.
+The Worker in `mcp/` has its own scripts, run from there: `npm test`, `npm run typecheck`, `npm run dev` (wrangler on 31338). On a fresh clone run `npm run build:data` first — `src/data.json` is generated, so `typecheck` fails with `TS2307` without it; `pretest` covers `npm test`. CI's `mcp` job runs the three in that order.
 
 **Pre-commit gate.** A tracked git hook at `.githooks/pre-commit` runs `npm run lint` and `npm run format:check` on every `git commit`; `core.hooksPath` is pointed at `.githooks/` by the `prepare` script on `npm install` (no husky). The same two checks run in CI (`ci.yml`). Run them before committing so the hook passes; `prettier --write .` fixes formatting. Bypass only in a genuine emergency with `git commit --no-verify`. The Worker's assertions are deliberately **not** in the hook: `mcp/` has its own dependency tree that most contributors never install, and running them would rewrite the generated `mcp/src/data.json` on every unrelated commit. CI is the gate for that.
 
